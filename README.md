@@ -143,3 +143,61 @@ npm run test:7  # Multi-step Observe-Decide-Act loop
 - [x] CLI runs tasks from natural language instructions in single-shot and interactive modes.
 - [x] Non-destructive navigation and form interactions verified (all 7 tests PASS).
 - [x] No browser action is hard-coded directly in the agent runtime.
+
+---
+
+# Phase 2: TNSKILL Instruction Parser
+
+## Architecture Overview
+```text
+Raw TNSKILL Instruction
+        ↓
+ Section Extraction (Lesson, Scenario, Objective, Navigation, Verification)
+        ↓
+ Semantic Parsing (Ollama LLM + Deterministic Facts)
+        ↓
+ Structured Task (ParsedTask Schema)
+        ↓
+ Schema Validation (Completeness, Types, Ambiguity, Missing Fields)
+        ↓
+   Validated Task
+```
+
+Phase 2 runs 100% independently of the browser and MCP. It translates raw instructional text into machine-readable, schema-validated task models without hallucinating missing fields.
+
+## Phase 2 CLI Usage
+
+Parse any task file:
+```bash
+npm run parse-task -- .\tasks\create-hr-task.txt
+npm run parse-task -- .\test\fixtures\tnskill-user-create.txt
+```
+
+Run parser test suite (10 tests):
+```bash
+npm run test:parser
+```
+
+## Phase 2 Definition of Done Checklist
+
+- [x] TNSKILL sections extracted (Lesson, Scenario, Objective, Navigation, Verification).
+- [x] Lesson separated from executable task information (`context.lesson`).
+- [x] Scenario extracted (`context.scenario`, `department`).
+- [x] Platform identified when provided (`ServiceNow`).
+- [x] Role identified when provided (`administrator`).
+- [x] Task objectives extracted into generic action records.
+- [x] Entities and field values extracted with camelCase normalization.
+- [x] Multiple entities supported independently (User 1 Bob & User 2 Jane).
+- [x] Navigation instructions extracted into step arrays.
+- [x] Verification requirements extracted (`record_exists`, identifiers, location).
+- [x] Boolean fields normalized (`Enabled`/`Disabled` -> `true`/`false`).
+- [x] Missing fields detected without hallucination.
+- [x] Ambiguous tasks detected (`TASK REQUIRES CLARIFICATION`).
+- [x] Parser output follows strict TypeScript schema (`ParsedTask`).
+- [x] Schema validation implemented (`TaskValidator`).
+- [x] Zero browser dependency (no Playwright, no Chromium, no MCP).
+- [x] Works through existing `LLMProvider` abstraction.
+- [x] Parser CLI works (`npm run parse-task`).
+- [x] 10/10 Parser tests pass (`npm run test:parser`).
+- [x] Phase 1 regression tests pass (`npm run test:all` - 7/7 passed).
+- [x] `npm run build` succeeds (`tsc` 0 errors).

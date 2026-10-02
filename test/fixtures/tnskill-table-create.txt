@@ -1,0 +1,19 @@
+**Lesson**
+
+Tables in ServiceNow store records and data structures. Custom tables can be created under System Definition to support custom business workflows and applications.
+
+**Scenario**
+
+You are a ServiceNow administrator configuring the IT asset management system.
+
+**Task Objective**
+
+1. Create a new table with the following parameters:
+Label: Hardware Asset
+Name: u_hardware_asset
+Application: Global
+Active Checkbox: Enabled
+
+2. Verify the new table appears in the Tables list.
+
+To begin, navigate to All > System Definition > Tables and select New.

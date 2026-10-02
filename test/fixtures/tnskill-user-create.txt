@@ -1,0 +1,31 @@
+**Lesson**
+
+A User is an individual who has been granted access to your ServiceNow instance. In ServiceNow, user accounts allow individuals to log in, submit requests, view knowledge articles, and perform work assigned to them based on their roles and permissions.
+
+**Scenario**
+
+You are a ServiceNow administrator supporting the HR department. The HR team is onboarding two new team members and requires administrative user accounts to be provisioned immediately.
+
+**Task Objective**
+
+1. Create two new users in ServiceNow with the following information:
+
+User 1:
+User ID: Bob.HR_Support
+First Name: Bob
+Last Name: HR Support
+Department: HR
+Email: Bob@example.com
+Active Checkbox: Enabled
+
+User 2:
+User ID: Jane.HR_Support
+First Name: Jane
+Last Name: HR Support
+Department: HR
+Email: Jane@example.com
+Active Checkbox: Enabled
+
+2. After creating both users, verify they appear in the Users list.
+
+To begin, navigate to All > User Administration > Users and select New.

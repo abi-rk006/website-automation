@@ -1,0 +1,18 @@
+**Lesson**
+
+Dashboards enable ServiceNow users and managers to visualize business data, reports, and performance analytics in real time.
+
+**Scenario**
+
+You are a ServiceNow administrator assigned to provide visibility into HR ticket operations.
+
+**Task Objective**
+
+1. Create a dashboard for the HR operations team:
+Title: HR Incident Overview
+Owner: hr_admin
+Active Checkbox: Enabled
+
+2. Verify the dashboard appears in the Dashboards list.
+
+To begin, navigate to All > Self-Service > Dashboards and select New.

@@ -1,0 +1,20 @@
+1. Create two new users in ServiceNow with the following information:
+User 1:
+User ID: Bob.HR_Support
+First Name: Bob
+Last Name: HR Support
+Department: HR
+Email: Bob@example.com
+Active Checkbox: Enabled
+
+User 2:
+User ID: Jane.HR_Support
+First Name: Jane
+Last Name: HR Support
+Department: HR
+Email: Jane@example.com
+Active Checkbox: Enabled
+
+2. After creating both users, verify they appear in the Users list.
+
+To begin, navigate to All > User Administration > Users and select New. 
