@@ -5,7 +5,7 @@ async function runTest4() {
   const agent = new BrowserAgent();
 
   try {
-    const task = 'Open https://example.com and click the More Information link to navigate to the about/info page.';
+    const task = 'Open https://example.com and click the Learn more link to navigate to the information page.';
     const result = await agent.execute(task);
 
     console.log(result.summary);

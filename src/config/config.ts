@@ -20,14 +20,14 @@ export interface AgentConfig {
 
 export function loadConfig(): AgentConfig {
   const parseArgs = (rawArgs?: string): string[] => {
-    if (!rawArgs) return ['-y', '@executeautomation/playwright-mcp-server'];
+    if (!rawArgs) return ['@playwright/mcp'];
     try {
       if (rawArgs.trim().startsWith('[')) {
         return JSON.parse(rawArgs);
       }
       return rawArgs.split(' ').filter(Boolean);
     } catch {
-      return ['-y', '@executeautomation/playwright-mcp-server'];
+      return ['@playwright/mcp'];
     }
   };
 

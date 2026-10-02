@@ -20,18 +20,25 @@ export interface LLMToolDefinition {
  * from the LLM prompt to avoid token explosion and CPU inference timeouts.
  */
 const EXCLUDED_TOOL_PREFIXES = [
+  'browser_video',
+  'browser_tracing',
+  'browser_start_video',
+  'browser_stop_video',
+  'browser_start_tracing',
+  'browser_stop_tracing',
+  'browser_start_recording',
+  'browser_stop_recording',
+  'browser_network_request',
+  'browser_cookie',
+  'browser_localstorage',
+  'browser_sessionstorage',
+  'browser_mouse_',
+  'browser_pdf_save',
+  'browser_run_code_unsafe',
+  'browser_emulate_media',
+  'browser_handle_dialog',
   'start_codegen',
   'end_codegen',
-  'get_codegen',
-  'clear_codegen',
-  'playwright_get',
-  'playwright_post',
-  'playwright_put',
-  'playwright_patch',
-  'playwright_delete',
-  'playwright_expect_response',
-  'playwright_assert_response',
-  'playwright_save_as_pdf',
 ];
 
 /**
@@ -45,8 +52,8 @@ export function convertMcpToolsToLLM(tools: Tool[]): LLMToolDefinition[] {
       let properties = (tool.inputSchema as any)?.properties || {};
       let required = (tool.inputSchema as any)?.required || [];
 
-      // For navigation, keep schema clean and focused on URL
-      if (tool.name === 'playwright_navigate') {
+      // Clean & concise schemas for core tools to maximize local model adherence
+      if (tool.name === 'browser_navigate' || tool.name === 'playwright_navigate') {
         properties = {
           url: {
             type: 'string',
@@ -54,6 +61,29 @@ export function convertMcpToolsToLLM(tools: Tool[]): LLMToolDefinition[] {
           },
         };
         required = ['url'];
+      } else if (tool.name === 'browser_click') {
+        properties = {
+          target: {
+            type: 'string',
+            description: 'Target element ref from snapshot (e.g. "e11"), element role/name (e.g. button "Submit"), or CSS selector',
+          },
+        };
+        required = ['target'];
+      } else if (tool.name === 'browser_type') {
+        properties = {
+          target: {
+            type: 'string',
+            description: 'Target element ref from snapshot (e.g. "e7") or CSS selector',
+          },
+          text: {
+            type: 'string',
+            description: 'Text to type into the element',
+          },
+        };
+        required = ['target', 'text'];
+      } else if (tool.name === 'browser_snapshot') {
+        properties = {};
+        required = [];
       }
 
       return {

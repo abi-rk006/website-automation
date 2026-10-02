@@ -70,8 +70,9 @@ export class OllamaProvider implements LLMProvider {
       const toolCalls: LLMToolCall[] = [];
 
       // 1. Process native tool calls
+      const validToolNames = new Set(tools.map((t) => t.function.name));
       for (const tc of rawToolCalls) {
-        const fnName = tc.function?.name;
+        const rawFnName = tc.function?.name;
         let fnArgs = tc.function?.arguments || {};
         if (typeof fnArgs === 'string') {
           try {
@@ -80,11 +81,13 @@ export class OllamaProvider implements LLMProvider {
             fnArgs = {};
           }
         }
-        if (fnName) {
+        if (rawFnName) {
+          const resolvedName = this.resolveToolName(rawFnName, validToolNames) || rawFnName;
+          const cleanArgs = this.normalizeToolArgs(resolvedName, fnArgs);
           toolCalls.push({
             id: tc.id || `call_${Date.now()}`,
-            name: fnName,
-            arguments: fnArgs,
+            name: resolvedName,
+            arguments: cleanArgs,
           });
         }
       }
@@ -151,25 +154,68 @@ export class OllamaProvider implements LLMProvider {
     if (validToolNames.has(rawName)) return rawName;
 
     const ALIASES: Record<string, string> = {
-      playwright_type: 'playwright_fill',
-      browser_type: 'playwright_fill',
-      browser_fill: 'playwright_fill',
-      browser_click: 'playwright_click',
-      browser_navigate: 'playwright_navigate',
-      browser_snapshot: 'playwright_get_visible_text',
-      browser_text: 'playwright_get_visible_text',
-      type: 'playwright_fill',
-      fill: 'playwright_fill',
-      click: 'playwright_click',
-      navigate: 'playwright_navigate',
+      playwright_type: 'browser_type',
+      browser_fill: 'browser_type',
+      playwright_fill: 'browser_type',
+      page_input_value: 'browser_type',
+      page_input: 'browser_type',
+      input_value: 'browser_type',
+      input: 'browser_type',
+      fill: 'browser_type',
+      type: 'browser_type',
+      playwright_click: 'browser_click',
+      page_click: 'browser_click',
+      click: 'browser_click',
+      playwright_navigate: 'browser_navigate',
+      page_navigate: 'browser_navigate',
+      navigate: 'browser_navigate',
+      goto: 'browser_navigate',
+      open: 'browser_navigate',
+      playwright_get_visible_text: 'browser_snapshot',
+      playwright_get_visible_html: 'browser_snapshot',
+      browser_text: 'browser_snapshot',
+      snapshot: 'browser_snapshot',
+      inspect: 'browser_snapshot',
     };
 
-    const mapped = ALIASES[rawName.toLowerCase()];
+    const lower = rawName.toLowerCase();
+    const mapped = ALIASES[lower];
     if (mapped && validToolNames.has(mapped)) {
       return mapped;
     }
 
+    if (lower.includes('input') || lower.includes('fill') || lower.includes('type')) {
+      if (validToolNames.has('browser_type')) return 'browser_type';
+    }
+    if (lower.includes('click')) {
+      if (validToolNames.has('browser_click')) return 'browser_click';
+    }
+    if (lower.includes('navigat') || lower.includes('goto') || lower.includes('open')) {
+      if (validToolNames.has('browser_navigate')) return 'browser_navigate';
+    }
+    if (lower.includes('snapshot') || lower.includes('screenshot') || lower.includes('inspect')) {
+      if (validToolNames.has('browser_snapshot')) return 'browser_snapshot';
+    }
+
     return null;
+  }
+
+  /**
+   * Normalizes argument aliases like selector -> target, value -> text.
+   */
+  private normalizeToolArgs(toolName: string, args: Record<string, any>): Record<string, any> {
+    const clean = { ...args };
+    delete clean.name;
+    delete clean.action;
+    delete clean.tool;
+
+    if (toolName === 'browser_type') {
+      if (clean.selector && !clean.target) clean.target = clean.selector;
+      if (clean.value !== undefined && !clean.text) clean.text = String(clean.value);
+    } else if (toolName === 'browser_click') {
+      if (clean.selector && !clean.target) clean.target = clean.selector;
+    }
+    return clean;
   }
 
   /**
@@ -185,12 +231,9 @@ export class OllamaProvider implements LLMProvider {
         const rawName = parsed.name || parsed.action || parsed.tool;
         const args = parsed.arguments || parsed.args || parsed.parameters || parsed.input || parsed;
         if (rawName) {
-          const resolvedName = this.resolveToolName(rawName, validToolNames);
-          if (resolvedName) {
-            const cleanArgs = typeof args === 'object' ? { ...args } : {};
-            delete cleanArgs.name;
-            delete cleanArgs.action;
-            delete cleanArgs.tool;
+          const resolvedName = this.resolveToolName(rawName, validToolNames) || rawName;
+          if (validToolNames.has(resolvedName)) {
+            const cleanArgs = typeof args === 'object' ? this.normalizeToolArgs(resolvedName, args) : {};
             extracted.push({
               name: resolvedName,
               arguments: cleanArgs,

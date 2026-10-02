@@ -39,11 +39,16 @@ export class AgentExecutionLoop {
     const systemPrompt = `You are an autonomous browser agent. You execute browser tasks through Playwright MCP tools.
 RULES:
 1. Work step-by-step.
-2. In each step, choose ONE appropriate MCP tool call to progress towards the task.
-3. Observe the tool result and visible page content returned from the browser to decide your next move.
-4. When you have completed the user's task, reply with "TASK COMPLETED: <summary>" and DO NOT call any more tools.
-5. If the user asked only to open or navigate to a URL (e.g. "Open example.com"), once playwright_navigate has loaded the page, the task is COMPLETE. Reply with "TASK COMPLETED" immediately.
-6. Do not call the same tool with identical arguments repeatedly.`;
+2. In each step, choose ONE appropriate MCP tool call to progress towards the task:
+   - browser_navigate: navigate to a URL (args: {"url": "..."})
+   - browser_type: type into an input element (args: {"target": "<ref e.g. e7 or selector>", "text": "..."})
+   - browser_click: click an element (args: {"target": "<ref e.g. e8 or selector>"})
+   - browser_snapshot: observe the current page accessibility tree and elements
+3. Observe the tool result and accessibility snapshot returned from the browser to decide your next move.
+4. In page snapshots, each element has a ref (e.g. [ref=e7]) or role/name (e.g. textbox "Full Name", button "Submit"). Use the ref (e.g. target: "e7") or selector to interact with elements.
+5. When you have completed all parts of the user's task, reply with "TASK COMPLETED: <summary>" and DO NOT call any more tools.
+6. If the user asked only to open or navigate to a URL (e.g. "Open example.com"), once navigation has loaded the page, the task is COMPLETE. Reply with "TASK COMPLETED" immediately.
+7. Do not call the same tool with identical arguments repeatedly.`;
 
     const messages: LLMMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -51,6 +56,7 @@ RULES:
     ];
 
     let consecutiveIdenticalCalls = 0;
+    let consecutiveEmptyResponses = 0;
     let lastCallSignature = '';
 
     while (state.status === 'running') {
@@ -86,20 +92,32 @@ RULES:
       // 4. Check if LLM indicates task completion
       if (
         response.isComplete ||
-        (response.content && /task completed|task is complete|finished/i.test(response.content)) ||
-        (response.toolCalls.length === 0 && response.content)
+        (response.content && /task completed|task is complete|goal achieved|finished the task/i.test(response.content))
       ) {
         logger.info(`LLM finished task with message: ${response.content}`);
         state.status = 'completed';
         break;
       }
 
-      // 5. If no tool was requested and no completion declared, terminate
+      // 5. If no tool was requested and no completion declared, prompt LLM to continue
       if (response.toolCalls.length === 0) {
-        logger.warn('LLM returned no tool call and no completion indication.');
-        state.status = 'completed';
-        break;
+        consecutiveEmptyResponses++;
+        if (consecutiveEmptyResponses >= 2) {
+          logger.warn('LLM returned no tool call multiple times. Ending task.');
+          state.status = 'completed';
+          break;
+        }
+        if (response.content) {
+          messages.push({ role: 'assistant', content: response.content });
+        }
+        messages.push({
+          role: 'user',
+          content: 'No tool action was recognized. Please invoke a browser tool (e.g., browser_type, browser_click) to continue, or reply "TASK COMPLETED: <summary>" if done.',
+        });
+        continue;
       }
+
+      consecutiveEmptyResponses = 0;
 
       // 6. Execute requested tool call(s)
       for (const toolCall of response.toolCalls) {
@@ -124,7 +142,7 @@ RULES:
         logger.action(stepNumber, toolCall.name, toolCall.arguments);
 
         // Track URL if tool is navigate
-        if (toolCall.name === 'playwright_navigate' && toolCall.arguments.url) {
+        if ((toolCall.name.includes('navigate') || toolCall.name.includes('open') || toolCall.name.includes('goto')) && toolCall.arguments.url) {
           state.currentUrl = toolCall.arguments.url;
         }
 
@@ -180,7 +198,7 @@ RULES:
 
         // Collect page observation
         let observationText = '';
-        if (!isError && (toolCall.name === 'playwright_navigate' || toolCall.name === 'playwright_click' || toolCall.name === 'playwright_fill')) {
+        if (!isError && (toolCall.name.includes('navigate') || toolCall.name.includes('click') || toolCall.name.includes('type') || toolCall.name.includes('fill'))) {
           try {
             logger.info(`Auto-observing page state following ${toolCall.name}...`);
             const observation = await this.browserRuntime.observePage();
@@ -202,7 +220,7 @@ RULES:
         // If the task was simply to open/navigate to this page and it succeeded, check if finished
         if (
           !isError &&
-          toolCall.name === 'playwright_navigate' &&
+          (toolCall.name.includes('navigate') || toolCall.name.includes('open')) &&
           /^(?:open|navigate to|go to)\s+https?:\/\/[^\s]+$/i.test(task.trim())
         ) {
           logger.info('Navigation task successfully loaded target URL. Task completed.');

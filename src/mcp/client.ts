@@ -26,17 +26,23 @@ export class McpClientWrapper {
    * Connects to the Playwright MCP server and discovers tools.
    */
   async connect(): Promise<Tool[]> {
-    logger.info(`Connecting to MCP server: ${this.config.mcpServerCommand} ${this.config.mcpServerArgs.join(' ')}`);
+    const launchArgs = [...this.config.mcpServerArgs];
+    if (this.config.browserHeadless && !launchArgs.includes('--headless')) {
+      launchArgs.push('--headless');
+    }
+    if (this.config.browserType && !launchArgs.includes('--browser')) {
+      launchArgs.push('--browser', this.config.browserType);
+    }
+
+    logger.info(`Connecting to MCP server: ${this.config.mcpServerCommand} ${launchArgs.join(' ')}`);
 
     try {
       this.transport = new StdioClientTransport({
         command: this.config.mcpServerCommand,
-        args: this.config.mcpServerArgs,
-        env: {
-          ...process.env,
-          BROWSER: this.config.browserType,
-          HEADLESS: this.config.browserHeadless ? 'true' : 'false',
-        },
+        args: launchArgs,
+        env: Object.fromEntries(
+          Object.entries(process.env).filter(([_, v]) => v !== undefined)
+        ) as Record<string, string>,
       });
 
       this.client = new Client(
@@ -112,14 +118,14 @@ export class McpClientWrapper {
       }
     }
 
-    // Default headless setting and sanitize navigate arguments
-    if (toolName === 'playwright_navigate') {
-      if (cleaned.headless === undefined) {
-        cleaned.headless = this.config.browserHeadless;
-      }
-      if (cleaned.waitUntil && !['load', 'domcontentloaded', 'networkidle', 'commit'].includes(cleaned.waitUntil)) {
-        cleaned.waitUntil = 'load';
-      }
+    // Support target aliases (selector -> target)
+    if (properties.target && !cleaned.target && rawArgs.selector) {
+      cleaned.target = rawArgs.selector;
+    }
+
+    // Support text aliases (value -> text)
+    if (properties.text && !cleaned.text && rawArgs.value !== undefined) {
+      cleaned.text = String(rawArgs.value);
     }
 
     return cleaned;

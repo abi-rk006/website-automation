@@ -7,6 +7,7 @@ const tests = [
   { name: 'Test 4 — Navigation', script: 'test/test-4-navigation.ts' },
   { name: 'Test 5 — Form Interaction', script: 'test/test-5-interaction.ts' },
   { name: 'Test 6 — Observation-Driven Interaction', script: 'test/test-6-observation.ts' },
+  { name: 'Test 7 — Multi-Step Agent Loop', script: 'test/test-7-multi-step.ts' },
 ];
 
 console.log('====================================================');

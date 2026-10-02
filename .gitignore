@@ -24,6 +24,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+.playwright-mcp/
 
 # OS and Editor files
 .DS_Store

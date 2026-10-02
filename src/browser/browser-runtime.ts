@@ -28,7 +28,7 @@ export class BrowserRuntime {
     const result = await this.mcpManager.executeTool(toolName, args);
 
     // If this was a navigation tool, update current URL tracker
-    if (toolName === 'playwright_navigate' && args.url) {
+    if ((toolName === 'browser_navigate' || toolName === 'playwright_navigate') && args.url) {
       this.currentUrl = args.url;
     }
 
@@ -41,42 +41,44 @@ export class BrowserRuntime {
   async observePage(): Promise<PageObservation> {
     logger.info('Observing browser state through MCP...');
 
-    let visibleText = '';
-    let interactiveElements: string[] = [];
+    let snapshotContent = '';
+    let pageTitle = '';
 
-    // 1. Get visible text via MCP
+    // 1. Try official Playwright MCP browser_snapshot tool
     try {
-      const textRes = await this.mcpManager.executeTool('playwright_get_visible_text', {});
-      if (!textRes.isError && textRes.content) {
-        visibleText = textRes.content.replace(/\n\s*\n/g, '\n').trim();
+      const snapRes = await this.mcpManager.executeTool('browser_snapshot', {});
+      if (!snapRes.isError && snapRes.content) {
+        snapshotContent = snapRes.content;
+
+        // Extract URL and Title if present in snapshot header
+        const urlMatch = snapshotContent.match(/- Page URL:\s*([^\r\n]+)/i);
+        if (urlMatch) this.currentUrl = urlMatch[1].trim();
+
+        const titleMatch = snapshotContent.match(/- Page Title:\s*([^\r\n]+)/i);
+        if (titleMatch) pageTitle = titleMatch[1].trim();
       }
     } catch (err: any) {
-      logger.debug('Failed to get visible text', err);
+      logger.debug('browser_snapshot not available, falling back', err);
     }
 
-    // 2. Get visible HTML via MCP and extract interactive element selectors
-    try {
-      const htmlRes = await this.mcpManager.executeTool('playwright_get_visible_html', {});
-      if (!htmlRes.isError && htmlRes.content) {
-        interactiveElements = this.extractInteractiveElements(htmlRes.content);
+    // 2. Fallback to visible text if snapshot was empty or not available
+    if (!snapshotContent) {
+      try {
+        const textRes = await this.mcpManager.executeTool('playwright_get_visible_text', {});
+        if (!textRes.isError && textRes.content) {
+          snapshotContent = textRes.content.replace(/\n\s*\n/g, '\n').trim();
+        }
+      } catch (err: any) {
+        logger.debug('Failed to get visible text fallback', err);
       }
-    } catch (err: any) {
-      logger.debug('Failed to get visible HTML', err);
     }
 
-    let summary = '';
-    if (visibleText) {
-      summary += `Page Text:\n${visibleText.slice(0, 1500)}\n`;
-    }
-    if (interactiveElements.length > 0) {
-      summary += `\nInteractive Elements:\n${interactiveElements.slice(0, 25).map((e) => `- ${e}`).join('\n')}`;
-    }
-
-    logger.observation(`Observation summary (${interactiveElements.length} elements detected)`);
+    logger.observation(`Observation captured (${snapshotContent.length} chars)`);
 
     return {
-      text: summary || 'Page is loaded.',
+      text: snapshotContent || 'Page is loaded.',
       url: this.currentUrl,
+      title: pageTitle,
       hasErrors: false,
     };
   }

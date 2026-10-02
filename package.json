@@ -12,12 +12,13 @@
     "test:4": "tsx test/test-4-navigation.ts",
     "test:5": "tsx test/test-5-interaction.ts",
     "test:6": "tsx test/test-6-observation.ts",
+    "test:7": "tsx test/test-7-multi-step.ts",
     "test:all": "tsx test/run-all-tests.ts",
     "build": "tsc"
   },
   "dependencies": {
-    "@executeautomation/playwright-mcp-server": "^1.0.12",
     "@modelcontextprotocol/sdk": "^1.31.0",
+    "@playwright/mcp": "^0.0.83",
     "dotenv": "^18.0.5"
   },
   "devDependencies": {
