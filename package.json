@@ -7,7 +7,9 @@
   "scripts": {
     "agent": "tsx src/cli/index.ts",
     "parse-task": "tsx src/cli/parse-cli.ts",
+    "plan-task": "tsx src/cli/plan-cli.ts",
     "test:parser": "tsx test/parser/run-parser-tests.ts",
+    "test:planner": "tsx test/planner/run-planner-tests.ts",
     "test:1": "tsx test/test-1-mcp.ts",
     "test:2": "tsx test/test-2-discovery.ts",
     "test:3": "tsx test/test-3-launch.ts",

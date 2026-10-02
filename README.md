@@ -201,3 +201,59 @@ npm run test:parser
 - [x] 10/10 Parser tests pass (`npm run test:parser`).
 - [x] Phase 1 regression tests pass (`npm run test:all` - 7/7 passed).
 - [x] `npm run build` succeeds (`tsc` 0 errors).
+
+---
+
+# Phase 3: Task Planner
+
+## Architecture Overview
+```text
+Validated Task (ParsedTask)
+        ↓
+   Task Planner (TaskPlanner / SemanticPlanner / DeterministicPlanner)
+        ↓
+  Execution Plan (ExecutionPlan Schema)
+        ↓
+ Plan Validation (PlanValidator: coverage, exact data, DAG, no runtime selectors)
+        ↓
+ Ready for Phase 4 (EXECUTION STATUS: NOT STARTED)
+```
+
+Phase 3 is an offline planning layer completely decoupled from Playwright and MCP. It establishes what needs to happen, in what order, dependencies between steps, and expected states after each action.
+
+## Phase 3 CLI Usage
+
+Generate an execution plan from any task file:
+```bash
+npm run plan-task -- .\tasks\create-hr-task.txt
+npm run plan-task -- .\test\fixtures\tnskill-user-create.txt
+```
+
+Run planner test suite (12 tests):
+```bash
+npm run test:planner
+```
+
+## Phase 3 Definition of Done Checklist
+
+- [x] Validated Phase 2 tasks converted into structured execution plans.
+- [x] Plans contain ordered steps with explicit logical progression.
+- [x] Plans preserve task data exactly (zero case-modification or data mutation).
+- [x] Plans preserve all required creation and verification actions.
+- [x] Plans contain explicit verification steps with conditions and locations.
+- [x] Step dependencies represented (`dependsOn`).
+- [x] Dependency cycles detected and rejected.
+- [x] Non-existent step dependencies detected and rejected.
+- [x] Expected states represented on all executable steps (`expectedState`).
+- [x] Browser-specific selectors (#id, .class, xpath) rejected by validator.
+- [x] MCP tool names (`browser_click`, `browser_type`) excluded from plans.
+- [x] Runtime element refs (`e1`, `e17`) excluded from plans.
+- [x] Planner works 100% without Chromium or browser processes.
+- [x] Planner works 100% without Playwright MCP.
+- [x] Planner uses existing `LLMProvider` abstraction with deterministic fallback.
+- [x] Planner output validated against `PlanValidator`.
+- [x] Planner CLI works (`npm run plan-task`).
+- [x] 12/12 Planner tests pass (`npm run test:planner`).
+- [x] 10/10 Parser tests still pass (`npm run test:parser`).
+- [x] 7/7 Phase 1 browser tests still pass (`npm run test:all`).
+- [x] `npm run build` succeeds (`tsc` 0 errors).
