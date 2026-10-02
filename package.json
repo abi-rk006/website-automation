@@ -1,0 +1,28 @@
+{
+  "name": "agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "agent": "tsx src/cli/index.ts",
+    "test:1": "tsx test/test-1-mcp.ts",
+    "test:2": "tsx test/test-2-discovery.ts",
+    "test:3": "tsx test/test-3-launch.ts",
+    "test:4": "tsx test/test-4-navigation.ts",
+    "test:5": "tsx test/test-5-interaction.ts",
+    "test:6": "tsx test/test-6-observation.ts",
+    "test:all": "tsx test/run-all-tests.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@executeautomation/playwright-mcp-server": "^1.0.12",
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "dotenv": "^18.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
